@@ -1,0 +1,146 @@
+PLUGIN.name = "Promote/Demote"
+PLUGIN.author = "Pilot"
+PLUGIN.desc = "Promote and demote players."
+
+--[[-------------------------------------------------------------------------
+You can edit the ranks below to fit whatever rank structure you need.
+
+To add new ranks:
+RankList[#] = "Rank"
+
+Last rank is always the highest.
+---------------------------------------------------------------------------]]
+local RankList = {}
+RankList[1] = "Recruit Legionary"
+RankList[2] = "Prime Legionary"
+RankList[3] = "Veteran Legionary"
+RankList[4] = "Recruit Decanus"
+RankList[5] = "Prime Decanus"
+RankList[6] = "Veteran Decanus"
+RankList[7] = "Centurion"
+
+nut.command.add("promote", {
+	syntax = "<string target>",
+	onRun = function(client, arguments)
+		local target = nut.command.findPlayer(client, arguments[1])
+		local clientName = client:Name()
+		local targetName = target:Name()
+		local yourCharacter = target:getChar()
+
+		if (IsValid(target)) then
+			for k, v in pairs(RankList) do
+				if string.find(clientName, RankList[table.GetLastKey(RankList)]) or client:IsAdmin() or client:IsSuperAdmin() then
+					if string.match(targetName, v) then
+						local getRankKey = table.KeyFromValue(RankList,v)
+						local newRank = (getRankKey + 1)
+
+							if !(string.find(targetName, RankList[table.GetLastKey(RankList)])) then
+								yourCharacter:setName(string.Replace(targetName,v,RankList[newRank]))
+								
+								if client != target then
+									client:notify(targetName.." has been promoted to: "..RankList[newRank]..".")
+									target:notify("You have been promoted to: "..RankList[newRank]..".")
+								else
+									client:notify(targetName.." has been promoted to: "..RankList[newRank]..".")
+								end
+							else
+								client:notify(targetName.." can not be promoted anymore!")
+							end
+						break
+					end
+				else
+					client:notify("Insufficient permission!")
+				end
+			end
+		end
+	end
+})
+
+nut.command.add("demote", {
+	syntax = "<string target>",
+	onRun = function(client, arguments)
+		local target = nut.command.findPlayer(client, arguments[1])
+		local clientName = client:Name()
+		local targetName = target:Name()
+		local yourCharacter = target:getChar()
+
+		if (IsValid(target)) then
+			for k, v in pairs(RankList) do
+				if string.find(clientName, RankList[table.GetLastKey(RankList)]) or client:IsAdmin() or client:IsSuperAdmin() then
+					if string.match(targetName, v) then
+						local getRankKey = table.KeyFromValue(RankList,v)
+						local newRank = (getRankKey - 1)
+						
+						if !(string.find(targetName, RankList[1])) then
+							yourCharacter:setName(string.Replace(targetName,v,RankList[newRank]))
+							
+							if client != target then
+								client:notify(targetName.." has been demoted to: "..RankList[newRank]..".")
+								target:notify("You have been demoted to: "..RankList[newRank]..".")
+							else
+								client:notify(targetName.." has been demoted to: "..RankList[newRank]..".")
+							end
+						else
+							client:notify(targetName.." can not be demoted anymore!")
+						end
+						break
+					end
+				else
+					client:notify("Insufficient permission!")
+				end
+			end
+		end
+	end
+})
+
+nut.command.add("setnick", {
+	syntax = "[string newnick]",
+	onRun = function(client, arguments)
+		if SERVER and IsValid(client) then
+			local newNick = arguments[1]
+			local character = client:getChar()
+			if newNick then
+				local oldName = client:Name()
+				local newName
+				if not string.find(client:Name(), "'") then
+					newName = oldName .. " '"..newNick.."' "
+				else
+					newName = string.gsub(oldName, "'.*'", "'"..newNick.."'")
+				end
+				character:setName(newName)
+				client:notify("Your nickname is now "..newName..".")
+			else
+				client:notify("You must specify a nickname.")
+			end
+		end
+	end
+})
+
+nut.command.add("removenick", {
+	syntax = "[none]",
+	onRun = function(client, arguments)
+		if SERVER and IsValid(client) then
+			local newName = string.gsub(client:Name(), "'.*' ", "")
+			local character = client:getChar()
+			character:setName(newName)
+			client:notify("You have removed your name and are now called "..newName..".")
+		end
+	end
+})
+
+--[[-------------------------------------------------------------------------
+I found an issue with your gamemode that if a player decides to set their name to "Commander Bob" they'll be able to access these commands
+So I made it so that if a player joins with the highest rank they'll get set to the lowest.
+---------------------------------------------------------------------------]]
+function SCHEMA:OnCharCreated(client, character)
+	local clientName = client:Name()
+	local character = client:getChar()
+
+	if (IsValid(client)) then
+		for k, v in pairs(RankList) do
+			if string.match(clientName, RankList[table.GetLastKey(RankList)]) then
+				character:setName(RankList[1].." "..clientName)
+			end
+		end
+	end
+end
